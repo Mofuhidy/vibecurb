@@ -7,28 +7,43 @@ import { scanFile, scanDirectory } from "../src/scanner/detector";
 import * as fs from "fs";
 import * as path from "path";
 
-// Create temp directory for tests
-const TEST_DIR = path.join(__dirname, "temp-test-files");
+// Create temp directories for tests
+const SCANFILE_TEST_DIR = path.join(__dirname, "temp-scanfile-tests");
+const SCANDIR_TEST_DIR = path.join(__dirname, "temp-scandir-tests");
+
+// Helper to generate unique filenames
+function getUniqueFilename(prefix: string, dir: string): string {
+  return path.join(
+    dir,
+    `${prefix}-${Date.now()}-${Math.random().toString(36).substring(7)}.js`,
+  );
+}
 
 describe("Scanner", () => {
   beforeAll(() => {
-    // Create test directory
-    if (!fs.existsSync(TEST_DIR)) {
-      fs.mkdirSync(TEST_DIR, { recursive: true });
+    // Create test directories
+    if (!fs.existsSync(SCANFILE_TEST_DIR)) {
+      fs.mkdirSync(SCANFILE_TEST_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(SCANDIR_TEST_DIR)) {
+      fs.mkdirSync(SCANDIR_TEST_DIR, { recursive: true });
     }
   });
 
   afterAll(() => {
     // Cleanup
-    if (fs.existsSync(TEST_DIR)) {
-      fs.rmSync(TEST_DIR, { recursive: true });
+    if (fs.existsSync(SCANFILE_TEST_DIR)) {
+      fs.rmSync(SCANFILE_TEST_DIR, { recursive: true });
+    }
+    if (fs.existsSync(SCANDIR_TEST_DIR)) {
+      fs.rmSync(SCANDIR_TEST_DIR, { recursive: true });
     }
   });
 
   describe("scanFile", () => {
     it("should detect email addresses", () => {
-      const testFile = path.join(TEST_DIR, "test-emails.js");
-      fs.writeFileSync(testFile, 'const contact = "admin@example.com";');
+      const testFile = getUniqueFilename("test-emails", SCANFILE_TEST_DIR);
+      fs.writeFileSync(testFile, 'const contact = "admin@company.com";');
 
       const findings = scanFile(testFile);
 
@@ -40,7 +55,7 @@ describe("Scanner", () => {
     });
 
     it("should detect API keys", () => {
-      const testFile = path.join(TEST_DIR, "test-apikeys.js");
+      const testFile = getUniqueFilename("test-apikeys", SCANFILE_TEST_DIR);
       fs.writeFileSync(
         testFile,
         'const apiKey = "sk-12345678901234567890abcdef";',
@@ -57,7 +72,7 @@ describe("Scanner", () => {
     });
 
     it("should ignore FAKE_ test data", () => {
-      const testFile = path.join(TEST_DIR, "test-fake.js");
+      const testFile = getUniqueFilename("test-fake", SCANFILE_TEST_DIR);
       fs.writeFileSync(testFile, 'const apiKey = "FAKE_API_KEY_001";');
 
       const findings = scanFile(testFile);
@@ -68,7 +83,7 @@ describe("Scanner", () => {
     });
 
     it("should detect database URLs", () => {
-      const testFile = path.join(TEST_DIR, "test-db.js");
+      const testFile = getUniqueFilename("test-db", SCANFILE_TEST_DIR);
       fs.writeFileSync(
         testFile,
         'const dbUrl = "mongodb://user:pass@localhost:27017/db";',
@@ -91,42 +106,39 @@ describe("Scanner", () => {
 
   describe("scanDirectory", () => {
     it("should scan directory recursively", () => {
-      // Create test files
-      const subDir = path.join(TEST_DIR, "subdir");
+      // Create test files with unique names
+      const subDir = path.join(SCANDIR_TEST_DIR, `subdir-${Date.now()}`);
       fs.mkdirSync(subDir, { recursive: true });
 
-      fs.writeFileSync(
-        path.join(TEST_DIR, "file1.js"),
-        'const email = "test@test.com";',
-      );
+      const file1 = path.join(SCANDIR_TEST_DIR, `file1-${Date.now()}.js`);
+      const file2 = path.join(subDir, `file2-${Date.now()}.js`);
+
+      fs.writeFileSync(file1, 'const email = "test@test.com";');
 
       fs.writeFileSync(
-        path.join(subDir, "file2.js"),
-        'const key = "supersecretkey1234567890";',
+        file2,
+        'const apiKey = "sk-12345678901234567890abcdef";',
       );
 
-      const results = scanDirectory({ path: TEST_DIR });
+      const results = scanDirectory({ path: SCANDIR_TEST_DIR });
 
       expect(results.length).toBeGreaterThan(0);
 
       // Cleanup
       fs.rmSync(subDir, { recursive: true });
-      fs.unlinkSync(path.join(TEST_DIR, "file1.js"));
+      fs.unlinkSync(file1);
     });
 
     it("should respect file extensions filter", () => {
-      fs.writeFileSync(
-        path.join(TEST_DIR, "test.js"),
-        'const email = "test@test.com";',
-      );
+      const jsFile = path.join(SCANDIR_TEST_DIR, `test-${Date.now()}.js`);
+      const txtFile = path.join(SCANDIR_TEST_DIR, `test-${Date.now()}.txt`);
 
-      fs.writeFileSync(
-        path.join(TEST_DIR, "test.txt"),
-        'const email = "other@test.com";',
-      );
+      fs.writeFileSync(jsFile, 'const email = "test@test.com";');
+
+      fs.writeFileSync(txtFile, 'const email = "other@test.com";');
 
       const results = scanDirectory({
-        path: TEST_DIR,
+        path: SCANDIR_TEST_DIR,
         extensions: [".js"],
       });
 
@@ -134,20 +146,23 @@ describe("Scanner", () => {
       expect(results.some((r) => r.filePath.endsWith(".js"))).toBe(true);
 
       // Cleanup
-      fs.unlinkSync(path.join(TEST_DIR, "test.js"));
-      fs.unlinkSync(path.join(TEST_DIR, "test.txt"));
+      fs.unlinkSync(jsFile);
+      fs.unlinkSync(txtFile);
     });
 
     it("should respect exclude patterns", () => {
-      const nodeModulesDir = path.join(TEST_DIR, "node_modules");
+      const nodeModulesDir = path.join(
+        SCANDIR_TEST_DIR,
+        `node_modules-${Date.now()}`,
+      );
       fs.mkdirSync(nodeModulesDir, { recursive: true });
 
       fs.writeFileSync(
         path.join(nodeModulesDir, "secret.js"),
-        'const key = "shouldnotscan";',
+        'const apiKey = "sk-12345678901234567890abcdef";',
       );
 
-      const results = scanDirectory({ path: TEST_DIR });
+      const results = scanDirectory({ path: SCANDIR_TEST_DIR });
 
       // Should not scan node_modules
       expect(results.some((r) => r.filePath.includes("node_modules"))).toBe(
