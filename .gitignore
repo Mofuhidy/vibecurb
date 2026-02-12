@@ -1,0 +1,39 @@
+# Security
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets/
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+AGENTS.md
