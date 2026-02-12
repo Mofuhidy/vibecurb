@@ -9,6 +9,12 @@
     "vibe": "./bin/vibecurb",
     "vc": "./bin/vibecurb"
   },
+  "files": [
+    "dist/**/*",
+    "bin/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -29,10 +35,22 @@
     "vibe-coding",
     "ai",
     "cli",
-    "typescript"
+    "typescript",
+    "api-keys",
+    "environment-variables",
+    "code-quality",
+    "static-analysis"
   ],
-  "author": "",
+  "author": "Mofuhidy <mofuhidy@example.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mofuhidy/vibecurb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Mofuhidy/vibecurb/issues"
+  },
+  "homepage": "https://github.com/Mofuhidy/vibecurb#readme",
   "engines": {
     "node": ">=14.0.0"
   },
