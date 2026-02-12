@@ -7,7 +7,8 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import * as path from 'path';
 import { scanDirectory, scanFile } from './scanner/detector';
-import { ScanResult } from './scanner/types';
+import { ScanResult, Finding } from './scanner/types';
+import { autoFix, previewFixes } from './fixer/auto-fix';
 
 const program = new Command();
 
@@ -23,6 +24,8 @@ program
   .option('-e, --extensions <exts>', 'File extensions to scan (comma-separated)')
   .option('-s, --severity <level>', 'Minimum severity level (error, warning, all)', 'all')
   .option('--exclude <dirs>', 'Directories to exclude (comma-separated)')
+  .option('--fix', 'Auto-fix detected secrets')
+  .option('--dry-run', 'Preview fixes without applying')
   .option('--json', 'Output results as JSON')
   .action(async (scanPath: string, options) => {
     try {
@@ -45,6 +48,47 @@ program
         severity: options.severity,
       });
       
+      // Handle dry-run
+      if (options.dryRun) {
+        const allFindings = results.flatMap(r => r.findings);
+        if (allFindings.length > 0) {
+          const preview = previewFixes(allFindings);
+          console.log(chalk.blue('\n🔮 Fix Preview:\n'));
+          console.log('Environment variables that would be created:');
+          preview.envVars.forEach(v => console.log(`  ${chalk.green(v)}`));
+          console.log(`\nFiles that would be modified: ${preview.filesToModify.length}`);
+          preview.filesToModify.forEach(f => console.log(`  ${chalk.cyan(f)}`));
+        }
+        return;
+      }
+
+      // Handle auto-fix
+      if (options.fix) {
+        const allFindings = results.flatMap(r => r.findings);
+        if (allFindings.length > 0) {
+          console.log(chalk.blue('\n🔧 Auto-fixing secrets...\n'));
+          const fixResult = autoFix(fullPath, allFindings);
+          
+          if (fixResult.success) {
+            console.log(chalk.green(`✅ ${fixResult.message}`));
+            console.log(chalk.green(`✅ Created .env with ${fixResult.envVars.length} variable(s)`));
+            console.log(chalk.green(`✅ Updated .gitignore`));
+            console.log(chalk.gray(`\nModified files:`));
+            fixResult.filesModified.forEach(f => console.log(`  ${chalk.cyan(f)}`));
+            console.log(chalk.yellow(`\n⚠️  Backups created: *.backup files`));
+            console.log(chalk.blue(`\nNext steps:`));
+            console.log(`  1. Review the changes`);
+            console.log(`  2. Add real values to .env file`);
+            console.log(`  3. Delete .backup files when satisfied`);
+          } else {
+            console.log(chalk.red(`❌ ${fixResult.message}`));
+          }
+        } else {
+          console.log(chalk.green('✅ No secrets found to fix'));
+        }
+        return;
+      }
+
       if (options.json) {
         console.log(JSON.stringify(results, null, 2));
       } else {
