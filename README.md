@@ -137,11 +137,12 @@ error-handling: 0
 ```bash
 vibecurb scan      # Full name
 vibe scan          # Short & memorable
-vc scan            # Power user shortcut
 
 vibe scan-network  # Short alias
-vc scan-network    # Power user shortcut
 ```
+
+> [!NOTE]
+> By default, `vibecurb` ignores `node_modules`, `dist`, `build`, `.git`, `coverage`, `.env`, `.env.local`, and `.next` directories.
 
 ## 🤖 AI Integration
 

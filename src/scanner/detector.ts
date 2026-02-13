@@ -27,6 +27,7 @@ const DEFAULT_EXCLUDE = [
   "coverage",
   ".env",
   ".env.local",
+  ".next",
 ] as const;
 
 export function scanFile(
@@ -40,7 +41,7 @@ export function scanFile(
     const lines = content.split("\n");
 
     lines.forEach((line, index) => {
-      PATTERNS.forEach((pattern) => {
+      PATTERNS.forEach(pattern => {
         // Skip if severity filter doesn't match
         if (
           options.severity &&
