@@ -4,10 +4,13 @@
 
 import { Command } from "commander";
 import chalk from "chalk";
-import * as path from "path";
+import * as pathModule from "path";
+import * as fs from "fs";
 import { scanDirectory } from "./scanner/detector";
+import { scanNetworkSecurity } from "./scanner/network-detector";
 import { ScanResult } from "./scanner/types";
 import { autoFix, previewFixes } from "./fixer/auto-fix";
+import { NetworkFinding } from "./scanner/network-detector";
 
 const program = new Command();
 
@@ -35,7 +38,7 @@ program
   .option("--json", "Output results as JSON")
   .action(async (scanPath: string, options) => {
     try {
-      const fullPath = path.resolve(scanPath);
+      const fullPath = pathModule.resolve(scanPath);
 
       console.log(chalk.blue(`🔍 Scanning: ${fullPath}\n`));
 
@@ -183,6 +186,133 @@ function displayResults(results: ScanResult[]): void {
 
   if (totalErrors === 0 && totalWarnings === 0) {
     console.log(chalk.green("✅ All clear!"));
+  }
+}
+
+program
+  .command("scan-network")
+  .description("Scan for network security issues (logging, API exposure, etc.)")
+  .argument("[path]", "Path to scan (file or directory)", ".")
+  .option(
+    "-s, --severity <level>",
+    "Minimum severity level (error, warning, all)",
+    "all",
+  )
+  .option("--json", "Output results as JSON")
+  .action(async (scanPath: string, options) => {
+    try {
+      const fullPath = pathModule.resolve(scanPath);
+
+      console.log(chalk.blue(`🌐 Scanning network security: ${fullPath}\n`));
+
+      const findings: NetworkFinding[] = [];
+
+      function scanFile(filePath: string) {
+        const result = scanNetworkSecurity(filePath, {
+          severity: options.severity,
+        });
+        findings.push(...result);
+      }
+
+      function scanRecursive(dirPath: string) {
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+
+        for (const entry of entries) {
+          const fullFilePath = pathModule.join(dirPath, entry.name);
+
+          if (entry.isDirectory()) {
+            if (
+              !["node_modules", "dist", "build", ".git"].includes(entry.name)
+            ) {
+              scanRecursive(fullFilePath);
+            }
+          } else if (/\.(js|ts|jsx|tsx)$/.test(entry.name)) {
+            scanFile(fullFilePath);
+          }
+        }
+      }
+
+      const stat = fs.statSync(fullPath);
+      if (stat.isFile()) {
+        scanFile(fullPath);
+      } else {
+        scanRecursive(fullPath);
+      }
+
+      if (options.json) {
+        console.log(JSON.stringify(findings, null, 2));
+      } else {
+        displayNetworkResults(findings);
+      }
+
+      const hasErrors = findings.some((f) => f.severity === "error");
+      if (hasErrors) {
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error(
+        chalk.red("❌ Scan failed:"),
+        error instanceof Error ? error.message : "Unknown error",
+      );
+      process.exit(1);
+    }
+  });
+
+function displayNetworkResults(findings: any[]): void {
+  const categories: Record<string, number> = {
+    request: 0,
+    response: 0,
+    logging: 0,
+    "error-handling": 0,
+  };
+
+  let totalErrors = 0;
+  let totalWarnings = 0;
+
+  if (findings.length === 0) {
+    console.log(chalk.green("✅ No network security issues found!"));
+    return;
+  }
+
+  findings.forEach((finding) => {
+    categories[finding.category]++;
+
+    const severityColor =
+      finding.severity === "error" ? chalk.red : chalk.yellow;
+    const severityIcon = finding.severity === "error" ? "❌" : "⚠️";
+
+    console.log(
+      `${severityIcon} ${severityColor(finding.severity.toUpperCase())} [${finding.category}]`,
+    );
+    console.log(`   📄 ${finding.filePath}:${finding.lineNumber}`);
+    console.log(`   ${chalk.white(finding.message)}`);
+    console.log(`   ${chalk.gray("Match:")} ${chalk.cyan(finding.match)}`);
+    console.log(
+      `   ${chalk.gray("Fix:")} ${chalk.green(finding.fixSuggestion)}`,
+    );
+    console.log();
+
+    if (finding.severity === "error") {
+      totalErrors++;
+    } else {
+      totalWarnings++;
+    }
+  });
+
+  console.log(chalk.bold("\n📊 Summary by Category:"));
+  console.log(chalk.gray("─".repeat(50)));
+  Object.entries(categories).forEach(([cat, count]) => {
+    if (count > 0) {
+      console.log(`${cat}: ${count}`);
+    }
+  });
+
+  console.log(chalk.bold("\n📊 Overall:"));
+  if (totalErrors > 0) {
+    console.log(chalk.red(`❌ ${totalErrors} error(s) found`));
+  }
+  if (totalWarnings > 0) {
+    console.log(chalk.yellow(`⚠️  ${totalWarnings} warning(s) found`));
   }
 }
 
