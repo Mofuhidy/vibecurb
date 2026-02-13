@@ -5,9 +5,9 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "vibecurb": "./bin/vibecurb",
-    "vibe": "./bin/vibecurb",
-    "vc": "./bin/vibecurb"
+    "vibecurb": "bin/vibecurb",
+    "vibe": "bin/vibecurb",
+    "vc": "bin/vibecurb"
   },
   "files": [
     "dist/**/*",
