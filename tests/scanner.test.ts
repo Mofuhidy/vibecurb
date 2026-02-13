@@ -19,14 +19,6 @@ function getUniqueFilename(prefix: string, dir: string): string {
   );
 }
 
-// Helper to generate unique filenames
-function getUniqueFilename(prefix: string): string {
-  return path.join(
-    TEST_DIR,
-    `${prefix}-${Date.now()}-${Math.random().toString(36).substring(7)}.js`,
-  );
-}
-
 describe("Scanner", () => {
   beforeAll(() => {
     // Create test directories
