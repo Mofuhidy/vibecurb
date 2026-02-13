@@ -1,0 +1,48 @@
+name: Build and Test
+
+on:
+  release:
+    types: [published]
+  push:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Create package artifact
+        run: npm pack
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibecurb-package
+          path: vibecurb-*.tgz
+
+      - name: Publish Instructions
+        run: |
+          echo "✅ Build successful!"
+          echo "📦 Package created: vibecurb-$(node -p "require('./package.json').version").tgz"
+          echo ""
+          echo "🚀 To publish manually:"
+          echo "   npm publish --access public"
+          echo ""
+          echo "⚠️  You will be prompted for 2FA code"

@@ -265,7 +265,3 @@ MIT © Mofuhidy
 - Security-first by design
 
 ---
-
-<p align="center">
-  Made with 🔒 by developers who care about security
-</p>
