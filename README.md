@@ -5,7 +5,8 @@
     <a href="#features">Features</a> •
     <a href="#installation">Installation</a> •
     <a href="#usage">Usage</a> •
-    <a href="#configuration">Configuration</a>
+    <a href="#ai-integration">AI Integration</a> •
+    <a href="#network-security">Network Security</a>
   </p>
 </p>
 
@@ -19,130 +20,184 @@
 
 ## ✨ Features
 
-### Current (v0.1.0)
+### Secret Detection (14+ Patterns)
 
-- ✅ **14 Secret Detection Patterns**
-  - Email addresses
-  - API keys (generic)
-  - AWS credentials
-  - GitHub tokens
-  - Stripe keys (live & test)
-  - Private keys
-  - Database URLs
-  - Bearer tokens
-  - Hardcoded passwords
-  - Slack tokens
-  - JWT tokens
-  - Google API keys
+- ✅ **API Keys** - Generic, AWS, GitHub, Stripe, Google
+- ✅ **Authentication** - Bearer tokens, JWT, passwords, private keys
+- ✅ **Database** - Connection strings (MongoDB, PostgreSQL, MySQL, Redis)
+- ✅ **Communication** - Slack tokens, email addresses
+- ✅ **Smart Filtering** - Ignores test data (FAKE\_ prefix) and placeholders
 
-- ✅ **Smart Filtering**
-  - Ignores test fixtures (FAKE\_ prefix)
-  - Ignores placeholder values
-  - Respects .gitignore patterns
+### Network Security Scanner
 
-- ✅ **CLI Interface**
-  - Scan files or directories
-  - Colored output with severity levels
-  - Fix suggestions for each finding
-  - JSON output for CI/CD
-  - Exit codes for automation
+Detect sensitive data exposure in:
 
-- ✅ **Three Command Aliases**
-  ```bash
-  vibecurb scan    # Full name
-  vibe scan        # Short & memorable
-  vc scan          # Power user shortcut
-  ```
+- 🌐 **Console Logging** - User objects, auth headers, API responses
+- 🌐 **HTTP Requests** - Hardcoded auth in fetch/axios, API keys in URLs
+- 🌐 **API Responses** - Full user objects, database documents, stack traces
+- 🌐 **Error Handling** - Raw errors exposed to clients
+- 🌐 **CORS Configuration** - Wildcard origins, insecure headers
 
-### Coming Soon
+### Auto-Fix
 
-- 🚧 **Auto-fix Generation** - Extract secrets to .env files
-- 🚧 **Git Hooks** - Pre-commit scanning
-- 🚧 **GitHub Actions** - Automated PR checks
-- 🚧 **VSCode Extension** - Real-time in-editor warnings
-- 🚧 **AI Agent Rules** - Configuration for AI coding assistants
+- 🔧 **Extract secrets** to `.env` files automatically
+- 🔧 **Replace code** with `process.env` references
+- 🔧 **Create backups** before modifying files
+- 🔧 **Update .gitignore** to exclude .env files
+
+### AI Integration
+
+- 🤖 **Universal AI support** - Works with Cursor, GitHub Copilot, Claude, etc.
+- 🤖 **AI instructions** included for all major tools
+- 🤖 **Prevents secrets** at generation time
 
 ## 🚀 Installation
 
-### Global Install (Recommended for CLI use)
-
 ```bash
+# Global install
 npm install -g vibecurb
-```
 
-### Local Install (Project-specific)
-
-```bash
+# Or local install
 npm install --save-dev vibecurb
 ```
 
 ## 📖 Usage
 
-### Basic Scan
+### Scan for Secrets
 
 ```bash
 # Scan current directory
 vibecurb scan
 
-# Scan specific directory
+# Scan specific path
 vibecurb scan ./src
 
-# Scan specific file
-vibecurb scan config.js
-```
+# Auto-fix detected secrets
+vibecurb scan --fix
 
-### Options
+# Preview fixes without applying
+vibecurb scan --dry-run
 
-```bash
 # Filter by severity
-vibecurb scan --severity error    # Only errors
-vibecurb scan --severity warning  # Only warnings
+vibecurb scan --severity error
 
-# Specify file extensions
-vibecurb scan --extensions .js,.ts,.json
-
-# Exclude directories
-vibecurb scan --exclude node_modules,dist,coverage
-
-# JSON output (for CI/CD)
+# JSON output for CI/CD
 vibecurb scan --json
 ```
 
-### Exit Codes
+### Scan Network Security
 
-- `0` - No secrets found
-- `1` - Errors found (CI/CD will fail)
+```bash
+# Scan for logging/API exposure issues
+vibecurb scan-network
 
-## 🛠️ Configuration
+# Scan specific directory
+vibecurb scan-network ./src
 
-Create a `.vibecurbrc.json` file in your project root:
-
-```json
-{
-  "extensions": [".js", ".ts", ".jsx", ".tsx"],
-  "exclude": ["node_modules", "dist", "build"],
-  "severity": "all",
-  "rules": {
-    "no-hardcoded-secrets": "error",
-    "no-frontend-api-keys": "error",
-    "env-vars-required": "error"
-  }
-}
+# Output as JSON
+vibecurb scan-network --json
 ```
 
-## 🔒 Security Philosophy
+**Example output:**
 
-vibecurb follows strict security principles:
+```
+🌐 Scanning network security: ./src
 
-1. **Never expose sensitive data** - All findings are processed locally
-2. **No cloud dependency** - 100% local scanning
-3. **Minimal logging** - No user data in logs
-4. **Fail secure** - Exit with error code if secrets found
-5. **Safe defaults** - Aggressive detection, user decides false positives
+❌ ERROR [logging]
+   📄 api.js:15
+   Console logging may expose user data
+   Match: console.log(user)
+   Fix: Use a structured logger with data redaction
 
-## 🧪 Testing Safe Secrets
+❌ ERROR [request]
+   📄 config.js:8
+   Hardcoded authorization header in fetch request
+   Match: fetch("/api", { headers: { Authorization: "Bearer token123" } })
+   Fix: Use environment variables for tokens
 
-When writing tests, use the `FAKE_` prefix to avoid triggering detection:
+⚠️ WARNING [response]
+   📄 routes.js:42
+   API response may expose full user object
+   Match: res.json({ user: req.user })
+   Fix: Select only necessary fields before sending response
+
+📊 Summary by Category:
+logging: 1
+request: 1
+response: 1
+error-handling: 0
+
+📊 Overall:
+❌ 2 error(s) found
+⚠️ 1 warning(s) found
+```
+
+### Command Aliases
+
+```bash
+vibecurb scan      # Full name
+vibe scan          # Short & memorable
+vc scan            # Power user shortcut
+
+vibe scan-network  # Short alias
+vc scan-network    # Power user shortcut
+```
+
+## 🤖 AI Integration
+
+vibecurb provides security instructions for AI coding assistants:
+
+### Supported Tools
+
+- ✅ **Cursor** - `.cursorrules` file
+- ✅ **GitHub Copilot** - `.github/copilot-instructions.md`
+- ✅ **Claude** - `AI_INSTRUCTIONS.md`
+- ✅ **Antigravity** - Via instructions file
+- ✅ **Wildsurf** - Via instructions file
+- ✅ **Any AI** - Universal instructions included
+
+### Setup
+
+1. Copy AI instructions to your project:
+
+```bash
+cp node_modules/vibecurb/.cursorrules ./.cursorrules
+cp node_modules/vibecurb/.github/copilot-instructions.md ./.github/
+```
+
+2. AI will now:
+   - Use environment variables for secrets
+   - Never log sensitive data
+   - Suggest vibecurb before committing
+
+## 🛡️ Security Checklist
+
+Before committing code, vibecurb checks for:
+
+**Secrets:**
+
+- [ ] No API keys in code
+- [ ] No database passwords
+- [ ] No private keys
+- [ ] No hardcoded tokens
+
+**Network:**
+
+- [ ] No console.log of user data
+- [ ] No auth headers in logs
+- [ ] No full objects in API responses
+- [ ] No stack traces in error responses
+
+**Best Practices:**
+
+- [ ] All secrets in .env
+- [ ] .env in .gitignore
+- [ ] No debugger statements
+- [ ] Proper CORS configuration
+
+## 🧪 Testing Safe Code
+
+Use `FAKE_` prefix in tests:
 
 ```javascript
 // ✅ Safe - will be ignored
@@ -153,11 +208,11 @@ const email = "FAKE_EMAIL_001@test.com";
 const apiKey = "sk-live-actual-secret-key";
 ```
 
-## 📦 Development
+## 🏗️ Development
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/vibecurb.git
+git clone https://github.com/Mofuhidy/vibecurb.git
 cd vibecurb
 
 # Install dependencies
@@ -169,17 +224,39 @@ npm run build
 # Run tests
 npm test
 
-# Run with hot reload
+# Run in development
 npm run dev
+```
+
+## 🔧 Configuration
+
+Create `.vibecurbrc.json`:
+
+```json
+{
+  "extensions": [".js", ".ts", ".jsx", ".tsx"],
+  "exclude": ["node_modules", "dist", "build"],
+  "severity": "all"
+}
+```
+
+## 📦 NPM Package
+
+```bash
+# Install globally
+npm install -g vibecurb
+
+# Use immediately
+vibecurb scan
 ```
 
 ## 🤝 Contributing
 
-Contributions welcome! Please read our [Contributing Guide](CONTRIBUTING.md) first.
+Contributions welcome! Please read our [Contributing Guide](CONTRIBUTING.md).
 
 ## 📄 License
 
-MIT © [Your Name]
+MIT © Mofuhidy
 
 ## 🙏 Acknowledgments
 
