@@ -2,7 +2,7 @@
  * Reporter module for formatting scan results
  */
 
-import { ScanResult, Finding } from "./types";
+import { ScanResult } from "./types";
 
 export interface ReportOptions {
   readonly format: "console" | "json" | "markdown";
@@ -79,7 +79,7 @@ function generateMarkdownReport(results: ScanResult[]): string {
 
 function generateConsoleReport(
   results: ScanResult[],
-  showFixes: boolean,
+  _showFixes: boolean,
 ): string {
   // This is handled by the CLI directly with chalk colors
   // Return a text summary for other use cases
